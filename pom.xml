@@ -209,6 +209,15 @@
             <version>${nohttp-checkstyle.version}</version>
           </dependency>
         </dependencies>
+        <!-- Global configuration so direct CLI invocation (e.g. mvn checkstyle:check) uses the NoHTTP ruleset
+             rather than default sun_checks.xml, avoiding 300+ style/javadoc violations outside project scope. -->
+        <configuration>
+          <configLocation>src/checkstyle/nohttp-checkstyle.xml</configLocation>
+          <sourceDirectories>${basedir}</sourceDirectories>
+          <includes>**/*</includes>
+          <excludes>**/.git/**/*,**/.idea/**/*,**/target/**/,**/.flattened-pom.xml,**/*.class</excludes>
+          <propertyExpansion>config_loc=${basedir}/src/checkstyle/</propertyExpansion>
+        </configuration>
         <executions>
           <execution>
             <id>nohttp-checkstyle-validation</id>
@@ -223,6 +232,14 @@
               <excludes>**/.git/**/*,**/.idea/**/*,**/target/**/,**/.flattened-pom.xml,**/*.class</excludes>
               <propertyExpansion>config_loc=${basedir}/src/checkstyle/</propertyExpansion>
             </configuration>
+          </execution>
+          <!-- Optional explicit verify phase execution (kept consistent) -->
+          <execution>
+            <id>nohttp-checkstyle-verify</id>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <phase>verify</phase>
           </execution>
         </executions>
       </plugin>
