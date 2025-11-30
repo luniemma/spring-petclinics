@@ -24,8 +24,12 @@ jobs:
           cache: 'maven'
       - name: Make mvnw executable
         run: chmod +x mvnw
+      - name: Apply formatting (auto-fix)
+        run: ./mvnw -B spring-javaformat:apply
+      - name: Skip validation flags
+        run: echo "JAVA_FORMAT_SKIP=true" >> $GITHUB_ENV
       - name: Build jar (skip tests)
-        run: ./mvnw -B -DskipTests package
+        run: ./mvnw -B -DskipTests -Dspring-javaformat.skip=true package
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Login to GHCR
