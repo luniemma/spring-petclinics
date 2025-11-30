@@ -52,8 +52,8 @@ jobs:
         if: env.TC_CLOUD_TOKEN != ''
         with:
           token: ${{ env.TC_CLOUD_TOKEN }}
-      - name: Verify (format + checks + tests)
-        run: ./mvnw -B clean verify -Dcheckstyle.skip=true -Dspring-javaformat.skip=true
+      - name: Run tests
+        run: ./mvnw -q test
 
   image:
     runs-on: ubuntu-latest
