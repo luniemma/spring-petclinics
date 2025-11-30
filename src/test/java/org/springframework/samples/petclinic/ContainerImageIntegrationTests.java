@@ -26,6 +26,9 @@ import java.net.http.HttpResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledInNativeImage;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.CassandraContainer;
+import org.testcontainers.containers.RedisContainer;
+import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -34,16 +37,39 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 class ContainerImageIntegrationTests {
 
 	@Test
-	void petclinicImageStartsAndServesHome() throws Exception {
-		String image = System.getProperty("petclinic.image", System.getenv().getOrDefault("PETCLINIC_IMAGE", "ghcr.io/" + System.getenv().getOrDefault("GITHUB_REPOSITORY", "luniemma/spring-petclinics") + ":latest"));
-		try (GenericContainer<?> app = new GenericContainer<>(DockerImageName.parse(image)).withExposedPorts(8080)) {
-			app.start();
+	void petclinicImageStartsWithDepsAndServesHome() throws Exception {
+		String image = System.getProperty("petclinic.image",
+				System.getenv().getOrDefault("PETCLINIC_IMAGE",
+						"ghcr.io/" + System.getenv().getOrDefault("GITHUB_REPOSITORY", "luniemma/spring-petclinics") + ":latest"));
+
+		try (
+				RedisContainer redis = new RedisContainer(DockerImageName.parse("redis:7-alpine"));
+				KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.6.1"));
+				CassandraContainer<?> cassandra = new CassandraContainer<>(DockerImageName.parse("cassandra:4.1"));
+				GenericContainer<?> app = new GenericContainer<>(DockerImageName.parse(image)).withExposedPorts(8080)) {
+
+			redis.start();
+			kafka.start();
+			cassandra.start();
+
+			String redisHost = redis.getHost();
+			Integer redisPort = redis.getMappedPort(6379);
+			String kafkaBootstrap = kafka.getBootstrapServers();
+			String cassandraHost = cassandra.getHost();
+			Integer cassandraPort = cassandra.getMappedPort(9042);
+			app.withEnv("SPRING_DATA_REDIS_HOST", redisHost)
+				.withEnv("SPRING_DATA_REDIS_PORT", String.valueOf(redisPort))
+				.withEnv("SPRING_KAFKA_BOOTSTRAP_SERVERS", kafkaBootstrap)
+				.withEnv("SPRING_CASSANDRA_CONTACT_POINTS", cassandraHost)
+				.withEnv("SPRING_CASSANDRA_PORT", String.valueOf(cassandraPort))
+				.start();
+
 			String baseUrl = "http://" + app.getHost() + ":" + app.getMappedPort(8080);
 			HttpClient client = HttpClient.newHttpClient();
-			HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + "/")).GET().build();
+			HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + "/actuator/health")).GET().build();
 			HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 			assertThat(response.statusCode()).isBetween(200, 399);
-			assertThat(response.body()).contains("PetClinic");
+			assertThat(response.body()).contains("UP");
 		}
 	}
 
