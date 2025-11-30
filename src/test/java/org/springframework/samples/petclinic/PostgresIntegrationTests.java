@@ -46,11 +46,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.samples.petclinic.vet.VetRepository;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.RestTemplate;
-import org.testcontainers.DockerClientFactory;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT, properties = { "spring.docker.compose.skip.in-tests=false", //
-		"spring.docker.compose.start.arguments=--force-recreate,--renew-anon-volumes,postgres" })
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("postgres")
+@Testcontainers(disabledWithoutDocker = true)
 @DisabledInNativeImage
 public class PostgresIntegrationTests {
 
@@ -63,18 +67,22 @@ public class PostgresIntegrationTests {
 	@Autowired
 	private RestTemplateBuilder builder;
 
+	@Container
+	@ServiceConnection
+	static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(DockerImageName.parse("postgres:16-alpine"))
+		.withDatabaseName("petclinic")
+		.withUsername("petclinic")
+		.withPassword("petclinic");
+
 	@BeforeAll
 	static void available() {
-		assumeTrue(DockerClientFactory.instance().isDockerAvailable(), "Docker not available");
+		assumeTrue(postgres.isRunning(), "PostgreSQL container not running");
 	}
 
 	public static void main(String[] args) {
-		new SpringApplicationBuilder(PetClinicApplication.class) //
-			.profiles("postgres") //
-			.properties( //
-					"spring.docker.compose.start.arguments=postgres" //
-			) //
-			.listeners(new PropertiesLogger()) //
+		new SpringApplicationBuilder(PetClinicApplication.class)
+			.profiles("postgres")
+			.listeners(new PropertiesLogger())
 			.run(args);
 	}
 
