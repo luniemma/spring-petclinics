@@ -8,5 +8,7 @@
 	<suppress files="build[\\/].*" checks=".*"/>
 	<suppress files="target[\\/].*" checks=".*"/>
 	<suppress files="tcc-agent[\\/].*" checks="NoHttp"/>
+	<!-- Testcontainers Cloud agent injected virtual file name 'tcc-agent:[line,col]' lacks a slash; broaden suppression -->
+	<suppress files="tcc-agent:.*" checks="NoHttp"/>
 	<suppress files=".+\.(jar|git|ico|p12|gif|jks|jpg|svg|log)" checks="NoHttp"/>
 </suppressions>
