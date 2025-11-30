@@ -31,7 +31,30 @@ jobs:
         if: env.TC_CLOUD_TOKEN != ''
         with:
           token: ${{ env.TC_CLOUD_TOKEN }}
+      - name: Apply formatting
+        run: ./mvnw -B spring-javaformat:apply
+      - name: Generate formatting diff
+        run: |
+          git diff > formatting.patch
+          if [ -s formatting.patch ]; then
+            echo "diff=true" >> $GITHUB_ENV
+          else
+            echo "diff=false" >> $GITHUB_ENV
+          fi
+      - name: Upload formatting diff
+        if: env.diff == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: formatting-diff
+          path: formatting.patch
+          if-no-files-found: ignore
+      - name: Fail if formatting changes
+        if: env.diff == 'true'
+        run: |
+          echo "Formatting changes were applied. Please commit the updated files.";
+          exit 1
       - name: Verify (format + checks + tests)
+        if: env.diff != 'true'
         run: ./mvnw -B clean verify
 
   image:
