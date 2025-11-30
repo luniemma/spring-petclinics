@@ -9,7 +9,7 @@
 ################################################################################
 
 # Create a stage for resolving and downloading dependencies.
-FROM eclipse-temurin:21-jdk-jammy as deps
+FROM eclipse-temurin:17-jdk-jammy as deps
 
 WORKDIR /build
 
@@ -38,8 +38,9 @@ WORKDIR /build
 COPY ./src src/
 RUN --mount=type=bind,source=pom.xml,target=pom.xml \
     --mount=type=cache,target=/root/.m2 \
-    ./mvnw package -DskipTests && \
-    mv target/$(./mvnw help:evaluate -Dexpression=project.artifactId -q -DforceStdout)-$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout).jar target/app.jar
+    ./mvnw -B -q package -DskipTests && \
+    JAR_NAME=$(./mvnw -q -DforceStdout help:evaluate -Dexpression=project.build.finalName) && \
+    mv target/${JAR_NAME}.jar target/app.jar
 
 ################################################################################
 
@@ -66,7 +67,7 @@ RUN java -Djarmode=layertools -jar target/app.jar extract --destination target/e
 # most recent version of that tag when you build your Dockerfile.
 # If reproducibility is important, consider using a specific digest SHA, like
 # eclipse-temurin@sha256:99cede493dfd88720b610eb8077c8688d3cca50003d76d1d539b0efc8cca72b4.
-FROM eclipse-temurin:21-jre-jammy AS final
+FROM eclipse-temurin:17-jre-jammy AS final
 
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/
@@ -82,10 +83,17 @@ RUN adduser \
 USER appuser
 
 # Copy the executable from the "package" stage.
-COPY --from=extract build/target/extracted/dependencies/ ./
-COPY --from=extract build/target/extracted/spring-boot-loader/ ./
-COPY --from=extract build/target/extracted/snapshot-dependencies/ ./
-COPY --from=extract build/target/extracted/application/ ./
+COPY --from=extract /build/target/extracted/dependencies/ ./
+COPY --from=extract /build/target/extracted/spring-boot-loader/ ./
+COPY --from=extract /build/target/extracted/snapshot-dependencies/ ./
+COPY --from=extract /build/target/extracted/application/ ./
+
+LABEL org.opencontainers.image.source="https://github.com/luniemma/spring-petclinics" \
+    org.opencontainers.image.title="Spring Petclinic" \
+    org.opencontainers.image.description="Demo Spring Petclinic application" \
+    org.opencontainers.image.licenses="Apache-2.0"
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD curl -fsS http://localhost:8080/ || exit 1
 
 EXPOSE 8080
 
