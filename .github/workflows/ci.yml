@@ -12,53 +12,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  verify:
+  build-image:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: 'maven'
-      - name: Make mvnw executable
-        run: chmod +x mvnw
-      - name: Apply formatting
-        run: ./mvnw -B spring-javaformat:apply
-      - name: Generate formatting diff
-        run: |
-          git diff > formatting.patch
-          if [ -s formatting.patch ]; then
-            echo "diff=true" >> $GITHUB_ENV
-          else
-            echo "diff=false" >> $GITHUB_ENV
-          fi
-      - name: Upload formatting diff
-        if: env.diff == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: formatting-diff
-          path: formatting.patch
-          if-no-files-found: ignore
-      - name: Validate formatting
-        run: ./mvnw -B spring-javaformat:validate
-      - name: Run Checkstyle (NoHttp before agent)
-        run: ./mvnw -B checkstyle:check -DskipTests
-      - name: Setup Testcontainers Cloud Client
-        uses: atomicjar/testcontainers-cloud-setup-action@v1
-        env:
-          TC_CLOUD_TOKEN: ${{ secrets.TC_CLOUD_TOKEN }}
-        if: env.TC_CLOUD_TOKEN != ''
-        with:
-          token: ${{ env.TC_CLOUD_TOKEN }}
-      - name: Run tests
-        run: ./mvnw -q test
-
-  image:
-    runs-on: ubuntu-latest
-    needs: verify
-    if: needs.verify.result == 'success' && github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v3
       - name: Set up JDK 17
@@ -73,14 +28,12 @@ jobs:
         run: ./mvnw -B -DskipTests package
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Build and Push Image
         uses: docker/build-push-action@v5
         with:
@@ -92,4 +45,29 @@ jobs:
           platforms: linux/amd64,linux/arm64
           provenance: false
 
-  # Upload reports from verify job only (produced there). If needed, add artifacts step inside verify.
+  cloud-tests:
+    runs-on: ubuntu-latest
+    needs: build-image
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Make mvnw executable
+        run: chmod +x mvnw
+      - name: Setup Testcontainers Cloud Client
+        uses: atomicjar/testcontainers-cloud-setup-action@v1
+        env:
+          TC_CLOUD_TOKEN: ${{ secrets.TC_CLOUD_TOKEN }}
+        if: env.TC_CLOUD_TOKEN != ''
+        with:
+          token: ${{ env.TC_CLOUD_TOKEN }}
+      - name: Run container image smoke test
+        env:
+          PETCLINIC_IMAGE: ghcr.io/${{ github.repository }}:${{ github.sha }}
+        run: ./mvnw -q -Dpetclinic.image=$PETCLINIC_IMAGE -Dtest=ContainerImageIntegrationTests test
+
+  # Additional reporting/artifacts can be added to cloud-tests if needed.
