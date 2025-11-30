@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledInNativeImage;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.CassandraContainer;
-import org.testcontainers.containers.RedisContainer;
 import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -43,7 +42,7 @@ class ContainerImageIntegrationTests {
 						"ghcr.io/" + System.getenv().getOrDefault("GITHUB_REPOSITORY", "luniemma/spring-petclinics") + ":latest"));
 
 		try (
-				RedisContainer redis = new RedisContainer(DockerImageName.parse("redis:7-alpine"));
+				GenericContainer<?> redis = new GenericContainer<>(DockerImageName.parse("redis:7-alpine")).withExposedPorts(6379);
 				KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.6.1"));
 				CassandraContainer<?> cassandra = new CassandraContainer<>(DockerImageName.parse("cassandra:4.1"));
 				GenericContainer<?> app = new GenericContainer<>(DockerImageName.parse(image)).withExposedPorts(8080)) {

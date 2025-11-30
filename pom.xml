@@ -169,7 +169,6 @@
       <groupId>org.testcontainers</groupId>
       <artifactId>redis</artifactId>
       <scope>test</scope>
-      <version>${testcontainers.version}</version>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
