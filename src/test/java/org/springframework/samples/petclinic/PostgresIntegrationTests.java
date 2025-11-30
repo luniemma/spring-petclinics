@@ -56,7 +56,7 @@ import org.testcontainers.utility.DockerImageName;
 @ActiveProfiles("postgres")
 @Testcontainers(disabledWithoutDocker = true)
 @DisabledInNativeImage
-public class PostgresIntegrationTests {
+class PostgresIntegrationTests {
 
 	@LocalServerPort
 	int port;
@@ -67,8 +67,8 @@ public class PostgresIntegrationTests {
 	@Autowired
 	private RestTemplateBuilder builder;
 
-	@Container
 	@ServiceConnection
+	@Container
 	static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(DockerImageName.parse("postgres:16-alpine"))
 		.withDatabaseName("petclinic")
 		.withUsername("petclinic")
