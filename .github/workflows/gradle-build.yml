@@ -1,4 +1,53 @@
-# This workflow will build a Java project with Gradle, and cache/restore any dependencies to improve the workflow execution time
+# name: Java CI with Gradle
+
+# on:
+#   push:
+#     branches: [ master ]
+#   pull_request:
+#     branches: [ master ]
+#   workflow_dispatch:
+
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     strategy:
+#       matrix:
+#         java: [ '17' ]
+
+#     steps:
+#       - uses: actions/checkout@v3
+#       - name: Set up JDK ${{ matrix.java }}
+#         uses: actions/setup-java@v4
+#         with:
+#           java-version: ${{ matrix.java }}
+#           distribution: 'temurin'
+#           cache: maven
+#       - name: Setup Gradle
+#         uses: gradle/actions/setup-gradle@v4
+#       - name: Setup Testcontainers Cloud Client
+#         uses: atomicjar/testcontainers-cloud-setup-action@v1
+#         with:
+#           token: ${{ secrets.TC_CLOUD_TOKEN }}
+#       - name: Make gradlew executable
+#         run: chmod +x gradlew
+#       - name: Build with Gradle
+#         run: ./gradlew build
+#       - name: Upload Gradle test reports
+#         if: always()
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: gradle-test-reports
+#           path: |
+#             build/reports/tests/test/**
+#           if-no-files-found: ignore
+#       - name: Upload Gradle problems report
+#         if: always()
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: gradle-problems-report
+#           path: |
+#             build/reports/problems/**
+#           if-no-files-found: ignore
 # For more information see: https://docs.github.com/en/actions/use-cases-and-examples/building-and-testing/building-and-testing-java-with-gradle
 
 # name: Java CI with Gradle
@@ -20,7 +69,7 @@
 #         java: [ '17' ]
 
 #     steps:
-#       - uses: actions/checkout@v4
+# 					- uses: actions/checkout@v3
 #       - name: Set up JDK ${{matrix.java}}
 #         uses: actions/setup-java@v4
 #         with:
@@ -29,7 +78,12 @@
 #           cache: maven
 #       - name: Setup Gradle
 #         uses: gradle/actions/setup-gradle@v4
-#       - name: Make gradlew executable
+# 					# Setup Testcontainers Cloud client to run container-based tests reliably in CI
+# 					- name: Setup Testcontainers Cloud Client
+# 						uses: atomicjar/testcontainers-cloud-setup-action@v1
+# 						with:
+# 							token: ${{ secrets.TC_CLOUD_TOKEN }}
+#        - name: Make gradlew executable
 #         run: chmod +x gradlew
 #       - name: Build with Gradle
 #         run: ./gradlew build
