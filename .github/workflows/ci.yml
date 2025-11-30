@@ -24,13 +24,6 @@ jobs:
           cache: 'maven'
       - name: Make mvnw executable
         run: chmod +x mvnw
-      - name: Setup Testcontainers Cloud Client
-        uses: atomicjar/testcontainers-cloud-setup-action@v1
-        env:
-          TC_CLOUD_TOKEN: ${{ secrets.TC_CLOUD_TOKEN }}
-        if: env.TC_CLOUD_TOKEN != ''
-        with:
-          token: ${{ env.TC_CLOUD_TOKEN }}
       - name: Apply formatting
         run: ./mvnw -B spring-javaformat:apply
       - name: Generate formatting diff
@@ -48,8 +41,19 @@ jobs:
           name: formatting-diff
           path: formatting.patch
           if-no-files-found: ignore
+      - name: Validate formatting
+        run: ./mvnw -B spring-javaformat:validate
+      - name: Run Checkstyle (NoHttp before agent)
+        run: ./mvnw -B checkstyle:check -DskipTests
+      - name: Setup Testcontainers Cloud Client
+        uses: atomicjar/testcontainers-cloud-setup-action@v1
+        env:
+          TC_CLOUD_TOKEN: ${{ secrets.TC_CLOUD_TOKEN }}
+        if: env.TC_CLOUD_TOKEN != ''
+        with:
+          token: ${{ env.TC_CLOUD_TOKEN }}
       - name: Verify (format + checks + tests)
-        run: ./mvnw -B clean verify
+        run: ./mvnw -B clean verify -Dcheckstyle.skip=true -Dspring-javaformat.skip=true
 
   image:
     runs-on: ubuntu-latest

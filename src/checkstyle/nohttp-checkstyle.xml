@@ -7,4 +7,9 @@
 	<module name="SuppressionFilter">
 		<property name="file" value="${config_loc}/nohttp-checkstyle-suppressions.xml"/>
 	</module>
+	<!-- Suppress NoHttp violations originating from Testcontainers Cloud injected pseudo files (tcc-agent) -->
+	<module name="SuppressionSingleFilter">
+		<property name="message" value="tcc-agent"/>
+		<property name="checks" value="io.spring.nohttp.checkstyle.check.NoHttpCheck"/>
+	</module>
 </module>
