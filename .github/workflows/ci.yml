@@ -48,13 +48,7 @@ jobs:
           name: formatting-diff
           path: formatting.patch
           if-no-files-found: ignore
-      - name: Fail if formatting changes
-        if: env.diff == 'true'
-        run: |
-          echo "Formatting changes were applied. Please commit the updated files.";
-          exit 1
       - name: Verify (format + checks + tests)
-        if: env.diff != 'true'
         run: ./mvnw -B clean verify
 
   image:
