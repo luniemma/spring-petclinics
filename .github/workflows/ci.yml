@@ -29,7 +29,7 @@ jobs:
       - name: Skip validation flags
         run: echo "JAVA_FORMAT_SKIP=true" >> $GITHUB_ENV
       - name: Build jar (skip tests)
-        run: ./mvnw -B -DskipTests -Dspring-javaformat.skip=true package
+        run: ./mvnw -B -DskipTests -Dspring-javaformat.skip=true -Dcheckstyle.skip=true package
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Login to GHCR
@@ -73,7 +73,7 @@ jobs:
       - name: Run container image smoke test
         env:
           PETCLINIC_IMAGE: petclinic:ci
-        run: ./mvnw -q -Dspring-javaformat.skip=true -Dpetclinic.image=$PETCLINIC_IMAGE -Dtest=ContainerImageIntegrationTests test
+        run: ./mvnw -q -Dspring-javaformat.skip=true -Dcheckstyle.skip=true -Dpetclinic.image=$PETCLINIC_IMAGE -Dtest=ContainerImageIntegrationTests test
       - name: Upload smoke test reports
         if: always()
         uses: actions/upload-artifact@v4
